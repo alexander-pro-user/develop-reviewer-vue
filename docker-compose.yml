@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+    app:
+        build:
+            args:
+                user: sammy
+                uid: 1000
+            context: .
+            dockerfile: docker/app.dockerfile
+        image: reviewer
+        container_name: reviewer-app
+        working_dir: /var/www/project
+        volumes:
+            - ./src:/var/www/project
+        extra_hosts:
+            - "develop.reviewer.com:127.0.0.1"
+        ports:
+            - "8008:80"
+        networks:
+            - laravel-net
+
+    mysql:
+        image: mysql:latest
+        environment:
+            MYSQL_ROOT_PASSWORD: 12345677
+            MYSQL_DATABASE: develop_db_reviewer
+            MYSQL_USER: admin
+            MYSQL_PASSWORD: 12345677
+        ports:
+            - "3316:3306"
+        volumes:
+            - db_mysql:/var/lib/mysql
+        networks:
+            - laravel-net
+
+    node:
+        build:
+            context: .
+            dockerfile: docker/node/node.dockerfile
+        volumes:
+            - ./src:/var/www/project
+        working_dir: /var/www/project
+        command: tail -f /dev/null
+        networks:
+            - laravel-net
+
+    phpmyadmin:
+        depends_on:
+            - mysql
+        image: phpmyadmin
+        restart: always
+        ports:
+            - "8090:80"
+        environment:
+            PMA_HOST: mysql
+            MYSQL_ROOT_PASSWORD: 12345677
+        networks:
+            - laravel-net
+
+networks:
+    laravel-net:
+        driver: bridge
+
+volumes:
+    db_mysql:
